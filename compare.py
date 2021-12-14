@@ -1,73 +1,60 @@
-from skimage.metrics import structural_similarity as ssim
-import matplotlib.pyplot as plt
+from PIL import Image
+from PIL import ImageChops
+from math import sqrt
 import numpy as np
 import cv2
 
-def mse(imageA, imageB):
-	# the 'Mean Squared Error' between the two images is the
-	# sum of the squared difference between the two images;
-	# NOTE: the two images must have the same dimension
-	err = np.sum((imageA.astype("float") - imageB.astype("float")) ** 2)
-	err /= float(imageA.shape[0] * imageA.shape[1])
+def setUp(imageA, imageB, imageC):
+	new = (400, 400) # This will have to be adjusted once we are on the real sorter
+
+	# resize the images
+	imageA = imageA.resize(new)
+	imageB = imageB.resize(new)
+	imageC = imageC.resize(new)
+
+	imageA = imageA.convert('L')
+	imageB = imageB.convert('L')
+	imageC = imageC.convert('L')
+
+	imageA = imageA.point(lambda v: v >= 128 and 255, "1")
+	imageB = imageB.point(lambda v: v >= 128 and 255, "1")
+	imageC = imageC.point(lambda v: v >= 128 and 255, "1")
+
+	# save after resize
+	imageA.save("temp.png")
+	imageB.save("temp2.png")
+	imageC.save("temp3.png")
+ 
+
+def calcDiff(imageA, imageB):
+    # calculate the root-mean-square difference between two images
+    dif = ImageChops.difference(imageA, imageB)
+    return [sqrt(np.mean(np.square(np.array(dif)))), np.mean(np.array(dif))]
+
+def main():
+	im = Image.open("cropCardSet.png")
+	im2 = Image.open("mid-c.png")
+	im3 = Image.open("theros.png") # the test comparison set
+
+	setUp(im, im2, im3)
 	
-	# return the MSE, the lower the error, the more "similar"
-	# the two images are
-	return err
-def compare_images(imageA, imageB, title):
-	# compute the mean squared error and structural similarity
-	# index for the images
-	m = mse(imageA, imageB)
-	s = ssim(imageA, imageB)
-	# setup the figure
-	fig = plt.figure(title)
-	plt.suptitle("MSE: %.2f, SSIM: %.2f" % (m, s))
-	# show first image
-	ax = fig.add_subplot(1, 2, 1)
-	plt.imshow(imageA, cmap = plt.cm.gray)
-	plt.axis("off")
-	# show the second image
-	ax = fig.add_subplot(1, 2, 2)
-	plt.imshow(imageB, cmap = plt.cm.gray)
-	plt.axis("off")
-	# show the images
-	plt.show()
+	im = Image.open("temp.png")
+	im2 = Image.open("temp2.png")
+	im3 = Image.open("temp3.png")
 
-# load the images -- the original, the original + contrast,
-# and the original + photoshop
-original = cv2.imread("cropCardSet.png")
-contrast = cv2.imread("cmdr.png")
-shopped = cv2.imread("theros.png")
+	compSame = calcDiff(im, im2)
+	compDiff = calcDiff(im, im3)
 
-width, height = original.size   # Get dimensions
-print(width, height)
+	print("Same set symbol comp: ", compSame)
+	print("Different set symbol comp: ", compDiff)
+	
+if __name__=="__main__":
+    main()
 
-width, height = contrast.size   # Get dimensions
-print(width, height)
 
-width, height = shopped.size   # Get dimensions
-print(width, height)
 
-# convert the images to grayscale
-original = cv2.cvtColor(original, cv2.COLOR_BGR2GRAY)
-contrast = cv2.cvtColor(contrast, cv2.COLOR_BGR2GRAY)
-shopped = cv2.cvtColor(shopped, cv2.COLOR_BGR2GRAY)
 
-# initialize the figure
-fig = plt.figure("Images")
-images = ("Original", original), ("Contrast", contrast), ("Photoshopped", shopped)
-# loop over the images
-for (i, (name, image)) in enumerate(images):
-	# show the image
-	ax = fig.add_subplot(1, 3, i + 1)
-	ax.set_title(name)
-	plt.imshow(image, cmap = plt.cm.gray)
-	plt.axis("off")
-# show the figure
-plt.show()
-# compare the images
-compare_images(original, original, "Original vs. Original")
-compare_images(original, contrast, "Original vs. Contrast")
-compare_images(original, shopped, "Original vs. Photoshopped")
+
 
 
 
