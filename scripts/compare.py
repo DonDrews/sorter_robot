@@ -7,7 +7,7 @@ import os, os.path
 def importSets():
 	imgs = dict()
 	valid_format = [".png"]
-	path = '/home/alex/Desktop/sorter_robot/set_symbols' # Swap once on the PI
+	path = 'set_symbols' # Swap once on the PI
 	
 	for f in os.listdir(path):
 		ext = os.path.splitext(f)[1]
@@ -30,8 +30,10 @@ def setUp(imageName, image): # Set up for the comparison image
 	# Threshold scale
 	image = image.point(lambda x: x >= 128 and 255, "1")
 
+	path = "edited_images/" + imageName
+
 	# Save after resize
-	image.save(imageName)
+	image.save(path, "png")
  
 def calcDiff(imageA, imageB):
     # Calculate the root-mean-square difference between two images
@@ -54,9 +56,8 @@ def main():
 	for i in setList:
 		setUp(i, setList[i]) # i is card name, setList[i] is the image
 
-	for i in setList:
 		try:
-			tempIm = Image.open(i)
+			tempIm = Image.open("edited_images/"+i)
 		except:
 			break
 
